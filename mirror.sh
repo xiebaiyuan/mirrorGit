@@ -38,12 +38,12 @@ update_stats() {
 
     if [ "$type" = "array" ]; then
         # 添加到数组
-        jq --arg key "$key" --arg value "$value" \
-            ".details[$key] += [\$value]" "$STATS_FILE" > "$STATS_FILE.tmp"
+        jq --arg value "$value" \
+            ".details.$key += [\$value]" "$STATS_FILE" > "$STATS_FILE.tmp"
     else
         # 更新数值
-        jq --arg key "$key" --arg value "$value" \
-            ".[$key] = ($value | tonumber)" "$STATS_FILE" > "$STATS_FILE.tmp"
+        jq --arg key "$key" --argjson value "$value" \
+            ".$key = \$value" "$STATS_FILE" > "$STATS_FILE.tmp"
     fi
     mv "$STATS_FILE.tmp" "$STATS_FILE"
 }
