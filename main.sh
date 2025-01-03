@@ -15,7 +15,6 @@ NC='\033[0m'
 # 初始化日志
 init_logging() {
     mkdir -p "$LOG_DIR"
-    LOG_FILE="$LOG_DIR/mirror-$(date '+%Y%m%d-%H%M%S').log"
     exec 1> >(tee -a "$LOG_FILE")
     exec 2> >(tee -a "$LOG_FILE" >&2)
 }
@@ -49,7 +48,8 @@ main() {
         "$GITEA_USER" \
         "$GITEA_TOKEN" \
         "$WORK_DIR" \
-        "$SKIP_REPOS"
+        "$SKIP_REPOS" \
+        "$STATS_FILE"
 
     mirror_exit_code=$?
 
@@ -57,10 +57,36 @@ main() {
     summary="GitHub to Gitea 同步报告
 
 运行时间: $(date '+%Y-%m-%d %H:%M:%S')
-同步状态: $([ $mirror_exit_code -eq 0 ] && echo "成功" || echo "失败")
 
 详细日志:
 $(cat "${LOG_FILE}")"
+
+    if [ -f "$STATS_FILE" ]; then
+        stats=$(cat "$STATS_FILE")
+        summary="GitHub to Gitea 同步报告
+
+    开始时间: $(echo "$stats" | jq -r '.start_time')
+    结束时间: $(echo "$stats" | jq -r '.end_time')
+    同步状态: $([ $mirror_exit_code -eq 0 ] && echo "成功" || echo "失败")
+
+    统计信息:
+    - 总仓库数: $(echo "$stats" | jq -r '.total_repos')
+    - 处理数量: $(echo "$stats" | jq -r '.processed')
+    - 成功数量: $(echo "$stats" | jq -r '.success')
+    - 失败数量: $(echo "$stats" | jq -r '.failed')
+    - 跳过数量: $(echo "$stats" | jq -r '.skipped')
+
+    跳过的仓库:
+    $(echo "$stats" | jq -r '.details.skipped_repos[]' | sed 's/^/- /')
+
+    失败的仓库:
+    $(echo "$stats" | jq -r '.details.failed_repos[]' | sed 's/^/- /')
+
+    详细日志 (最后 50 行):
+    $(tail -n 50 "$LOG_FILE")"
+    else
+        summary="无法获取同步统计信息"
+    fi
 
     # 如果启用了邮件通知，调用 mail.sh
     if [ "$ENABLE_MAIL" = "true" ]; then

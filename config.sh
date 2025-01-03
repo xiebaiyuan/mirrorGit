@@ -28,3 +28,7 @@ SKIP_REPOS=${SKIP_REPOS:-"archive,AutoApiSecret, \
                   carrot,ChatGLM-6B,dokploy,hub-mirror, \
                   Download-macOS, \
                   songtianlun,songtianlun.github.io"}
+
+# 系统配置
+LOG_FILE="$LOG_DIR/mirror-$(date '+%Y%m%d-%H%M%S').log"
+STATS_FILE="$LOG_DIR/sync_stats-$(date '+%Y%m%d-%H%M%S').json"
