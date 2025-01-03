@@ -30,6 +30,22 @@
 | GITEA_TOKEN | 是 | Gitea 访问令牌 | `d4209xxxxxxxxxxxxx` |
 | SKIP_REPOS | 否 | 跳过的仓库列表（逗号分隔） | `repo1,repo2,repo3` |
 | WORK_DIR | 否 | 临时工作目录 | `/tmp/git-mirror` |
+| ENABLE_MAIL | 否 | 是否启用邮件通知 | `true` 或 `false` | `false` |
+| SMTP_SERVER | 否 | SMTP 服务器地址 | `smtp.gmail.com` | - |
+| SMTP_PORT | 否 | SMTP 端口 | `587` | `587` |
+| SMTP_USER | 否 | SMTP 用户名 | `your-email@gmail.com` | - |
+| SMTP_PASS | 否 | SMTP 密码 | `your-password` | - |
+| MAIL_TO | 否 | 接收通知的邮箱 | `your-email@example.com` | - |
+| MAIL_FROM | 否 | 发件人地址 | `noreply@example.com` | `$SMTP_USER` |
+
+## 日志文件
+
+脚本会自动创建日志文件，包含完整的运行记录：
+
+- 默认日志目录：`/tmp/github-mirror-logs`
+- 日志文件名格式：`mirror-YYYYMMDD-HHMMSS.log`
+- 每次运行创建新的日志文件
+- 邮件通知中包含日志最后 50 行
 
 ## 使用方法
 
