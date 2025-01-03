@@ -42,7 +42,7 @@ main() {
     log "开始同步处理..."
 
     # 调用 mirror.sh 进行同步
-    true || bash "$SCRIPT_DIR/mirror.sh" \
+    bash "$SCRIPT_DIR/mirror.sh" \
         "$GITHUB_USER" \
         "$GITHUB_TOKEN" \
         "$GITEA_URL" \
