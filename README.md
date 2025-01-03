@@ -10,6 +10,7 @@
 - 详细的进度显示和错误提示
 - 支持通过环境变量配置
 - 适合配合 crontab 使用
+- 支持运行后收集报告并发送邮件
 
 ## 必要条件
 
@@ -45,11 +46,10 @@
 - 默认日志目录：`/tmp/github-mirror-logs`
 - 日志文件名格式：`mirror-YYYYMMDD-HHMMSS.log`
 - 每次运行创建新的日志文件
-- 邮件通知中包含日志最后 50 行
 
 ## 使用方法
 
-### 1. 直接运行
+### 直接运行
 
 ```bash
 GITHUB_USER=username \
@@ -60,7 +60,7 @@ GITEA_TOKEN=your-gitea-token \
 bash mirror.sh
 ```
 
-### 2. 配置环境变量后运行
+### 配置环境变量后运行
 
 ```bash
 # 设置环境变量
@@ -74,7 +74,7 @@ export GITEA_TOKEN=your-gitea-token
 bash mirror.sh
 ```
 
-### 3. 设置定时任务
+### 设置定时任务
 
 编辑 crontab：
 ```bash
@@ -86,7 +86,7 @@ crontab -e
 0 2 * * * GITHUB_USER=username GITHUB_TOKEN=xxx GITEA_URL=https://git.example.com GITEA_USER=username GITEA_TOKEN=xxx /path/to/mirror.sh >> /path/to/mirror.log 2>&1
 ```
 
-### 4. 跳过特定仓库
+### 跳过特定仓库
 
 ```bash
 GITHUB_USER=username \
@@ -95,6 +95,41 @@ GITEA_USER=username \
 GITEA_TOKEN=xxx \
 SKIP_REPOS="repo1,repo2,repo3" \
 bash mirror.sh
+```
+
+## 邮件通知配置
+
+脚本支持在运行完成后发送邮件通知，需要配置以下环境变量：
+
+| 变量名 | 必需 | 说明 | 示例 |
+|--------|------|------|------|
+| SMTP_SERVER | 否 | SMTP 服务器地址 | `smtp.gmail.com` |
+| SMTP_PORT | 否 | SMTP 端口 | `587` |
+| SMTP_USER | 否 | SMTP 用户名 | `your-email@gmail.com` |
+| SMTP_PASS | 否 | SMTP 密码 | `your-password` |
+| MAIL_TO | 否 | 接收通知的邮箱 | `your-email@example.com` |
+| MAIL_FROM | 否 | 发件人地址（默认为 SMTP_USER） | `noreply@example.com` |
+
+### 邮件通知使用示例
+
+### 完整配置示例
+```bash
+GITHUB_USER=username \
+GITHUB_TOKEN=xxx \
+GITEA_URL=https://git.example.com \
+GITEA_USER=username \
+GITEA_TOKEN=xxx \
+SMTP_SERVER=smtp.gmail.com \
+SMTP_PORT=587 \
+SMTP_USER=your-email@gmail.com \
+SMTP_PASS=your-password \
+MAIL_TO=your-email@example.com \
+bash mirror.sh
+```
+
+### Crontab 配置示例
+```bash
+0 2 * * * GITHUB_USER=username GITHUB_TOKEN=xxx GITEA_URL=https://git.example.com GITEA_USER=username GITEA_TOKEN=xxx SMTP_SERVER=smtp.gmail.com SMTP_PORT=587 SMTP_USER=your-email@gmail.com SMTP_PASS=your-password MAIL_TO=your-email@example.com /path/to/mirror.sh
 ```
 
 ## 常见问题
@@ -107,18 +142,12 @@ bash mirror.sh
    - 访问 Gitea 设置 -> 应用 -> 创建新的令牌
    - 需要仓库的读写权限
 
-3. **日志查看**
-   ```bash
-   # 如果配置了日志输出
-   tail -f /path/to/mirror.log
-   ```
-
 4. **错误处理**
    - 检查令牌权限是否正确
    - 确保 Gitea 实例可访问
    - 验证用户名和 URL 是否正确
 
-## 调试模式
+5. 调试模式
 
 添加 `-x` 参数启用调试模式：
 ```bash
