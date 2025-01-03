@@ -20,13 +20,23 @@ Date: $(date -R)
 
 $BODY"
 
-    curl -s --url "smtps://$SMTP_SERVER:$SMTP_PORT" \
-        --mail-from "$MAIL_FROM" \
-        --mail-rcpt "$MAIL_TO" \
-        --upload-file - \
-        --ssl-reqd \
-        --user "$SMTP_USER:$SMTP_PASS" \
-        <<< "$email_content"
+    if [ "$SMTP_PORT" == 465 ]; then
+      curl -s --url "smtps://$SMTP_SERVER:$SMTP_PORT" \
+          --mail-from "$MAIL_FROM" \
+          --mail-rcpt "$MAIL_TO" \
+          --upload-file - \
+          --ssl-reqd \
+          --user "$SMTP_USER:$SMTP_PASS" \
+          <<< "$email_content"
+    else
+      curl -s --url "smtp://$SMTP_SERVER:$SMTP_PORT" \
+          --mail-from "$MAIL_FROM" \
+          --mail-rcpt "$MAIL_TO" \
+          --upload-file - \
+          --ssl-reqd \
+          --user "$SMTP_USER:$SMTP_PASS" \
+          <<< "$email_content"
+    fi
 }
 
 # 主函数
