@@ -82,6 +82,9 @@ $(cat "${LOG_FILE}")"
     失败的仓库:
     $(echo "$stats" | jq -r '.details.failed_repos[]' | sed 's/^/- /')
 
+    成功的仓库：
+    $(echo "$stats" | jq -r '.details.success_repos[]' | sed 's/^/- /')
+
     详细日志 (最后 50 行):
     $(tail -n 50 "$LOG_FILE")"
     else
