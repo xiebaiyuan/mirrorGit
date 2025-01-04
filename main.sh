@@ -54,7 +54,8 @@ main() {
     mirror_exit_code=$?
 
     # 准备邮件内容
-    summary="GitHub to Gitea 同步报告
+    notice_subject="GitHub 同步$([ $mirror_exit_code -eq 0 ] && echo "成功" || echo "失败") - $(date '+%Y-%m-%d')"
+    notice_content="GitHub to Gitea 同步报告
 
 运行时间: $(date '+%Y-%m-%d %H:%M:%S')
 
@@ -98,8 +99,6 @@ $(cat "$LOG_FILE")
 
     # 如果启用了邮件通知，调用 mail.sh
     if [ "$ENABLE_MAIL" = "true" ]; then
-        subject="GitHub 同步$([ $mirror_exit_code -eq 0 ] && echo "成功" || echo "失败") - $(date '+%Y-%m-%d')"
-
         bash "$SCRIPT_DIR/mail.sh" \
             "$SMTP_SERVER" \
             "$SMTP_PORT" \
@@ -107,20 +106,16 @@ $(cat "$LOG_FILE")
             "$SMTP_PASS" \
             "$MAIL_TO" \
             "$MAIL_FROM" \
-            "$subject" \
-            "$summary"
+            "$notice_subject" \
+            "$notice_content"
     fi
 
-    # 准备飞书通知内容
-    feishu_title="GitHub 同步$([ $mirror_exit_code -eq 0 ] && echo "成功" || echo "失败")"
-    feishu_content="GitHub to Gitea 同步报告\n\n$(tail -n 50 "$LOG_FILE")"
-    
     # 如果启用了飞书通知，调用 feishu_notify.sh
     if [ "$ENABLE_FEISHU" = "true" ]; then
         bash "$SCRIPT_DIR/feishu_notify.sh" \
             "$FEISHU_WEBHOOK_URL" \
-            "$feishu_title" \
-            "$feishu_content"
+            "$notice_subject" \
+            "$notice_content"
     fi
 
 

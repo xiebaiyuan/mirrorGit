@@ -7,27 +7,24 @@ CONTENT="$3"
 
 # 飞书通知
 send_feishu_notification() {
-    local message=$(cat <<EOF
-{
-    "msg_type": "post",
-    "content": {
-        "post": {
-            "zh_cn": {
-                "title": "$TITLE",
-                "content": [
-                    [
-                        {
-                            "tag": "text",
-                            "text": "$CONTENT"
-                        }
-                    ]
-                ]
+    local message=$(jq -n \
+        --arg title "$TITLE" \
+        --arg text "$CONTENT" \
+        '{
+            msg_type: "post",
+            content: {
+                post: {
+                    zh_cn: {
+                        title: $title,
+                        content: [[{
+                            tag: "text",
+                            text: $text
+                        }]]
+                    }
+                }
             }
-        }
-    }
-}
-EOF
-)
+        }'
+    )
     curl -s -X POST "$WEBHOOK_URL" -H "Content-Type: application/json" -d "$message"
 }
 
