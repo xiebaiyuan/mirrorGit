@@ -55,12 +55,7 @@ main() {
 
     # 准备邮件内容
     notice_subject="GitHub 同步$([ $mirror_exit_code -eq 0 ] && echo "成功" || echo "失败") - $(date '+%Y-%m-%d')"
-    notice_content="GitHub to Gitea 同步报告
-
-运行时间: $(date '+%Y-%m-%d %H:%M:%S')
-
-详细日志:
-$(cat "${LOG_FILE}")"
+    summary=""
 
     if [ -f "$STATS_FILE" ]; then
         stats=$(cat "$STATS_FILE")
@@ -85,17 +80,20 @@ $(echo "$stats" | jq -r '.details.failed_repos[]' | sed 's/^/- /')
 
 成功的仓库：
 $(echo "$stats" | jq -r '.details.success_repos[]' | sed 's/^/- /')
-
-详细日志 (最后 50 行):
-$(tail -n 50 "$LOG_FILE")
-
-详细日志:
-$(cat "$LOG_FILE")
 "
 
     else
         summary="无法获取同步统计信息"
     fi
+
+    notice_content="$summary
+
+详细日志 (最后 50 行):
+$(tail -n 50 "$LOG_FILE")
+
+全部日志:
+$(cat "$LOG_FILE")
+"
 
     # 如果启用了邮件通知，调用 mail.sh
     if [ "$ENABLE_MAIL" = "true" ]; then
