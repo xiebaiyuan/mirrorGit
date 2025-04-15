@@ -57,7 +57,7 @@ GITHUB_TOKEN=your-github-token \
 GITEA_URL=https://git.example.com \
 GITEA_USER=username \
 GITEA_TOKEN=your-gitea-token \
-bash mirror.sh
+bash main.sh
 ```
 
 ### 配置环境变量后运行
@@ -71,7 +71,7 @@ export GITEA_USER=username
 export GITEA_TOKEN=your-gitea-token
 
 # 运行脚本
-bash mirror.sh
+bash main.sh
 ```
 
 ### 设置定时任务
@@ -83,7 +83,7 @@ crontab -e
 
 添加定时任务（每天凌晨 2 点运行）：
 ```cron
-0 2 * * * GITHUB_USER=username GITHUB_TOKEN=xxx GITEA_URL=https://git.example.com GITEA_USER=username GITEA_TOKEN=xxx /path/to/mirror.sh >> /path/to/mirror.log 2>&1
+0 2 * * * GITHUB_USER=username GITHUB_TOKEN=xxx GITEA_URL=https://git.example.com GITEA_USER=username GITEA_TOKEN=xxx /path/to/main.sh >> /path/to/main.log 2>&1
 ```
 
 ### 跳过特定仓库
@@ -94,7 +94,7 @@ GITEA_URL=https://git.example.com \
 GITEA_USER=username \
 GITEA_TOKEN=xxx \
 SKIP_REPOS="repo1,repo2,repo3" \
-bash mirror.sh
+bash main.sh
 ```
 
 ## 邮件通知配置
@@ -124,12 +124,12 @@ SMTP_PORT=587 \
 SMTP_USER=your-email@gmail.com \
 SMTP_PASS=your-password \
 MAIL_TO=your-email@example.com \
-bash mirror.sh
+bash main.sh
 ```
 
 ### Crontab 配置示例
 ```bash
-0 2 * * * GITHUB_USER=username GITHUB_TOKEN=xxx GITEA_URL=https://git.example.com GITEA_USER=username GITEA_TOKEN=xxx SMTP_SERVER=smtp.gmail.com SMTP_PORT=587 SMTP_USER=your-email@gmail.com SMTP_PASS=your-password MAIL_TO=your-email@example.com /path/to/mirror.sh
+0 2 * * * GITHUB_USER=username GITHUB_TOKEN=xxx GITEA_URL=https://git.example.com GITEA_USER=username GITEA_TOKEN=xxx SMTP_SERVER=smtp.gmail.com SMTP_PORT=587 SMTP_USER=your-email@gmail.com SMTP_PASS=your-password MAIL_TO=your-email@example.com /path/to/main.sh
 ```
 
 ## 常见问题
@@ -151,7 +151,7 @@ bash mirror.sh
 
 添加 `-x` 参数启用调试模式：
 ```bash
-bash -x mirror.sh
+bash -x main.sh
 ```
 
 ## 注意事项
