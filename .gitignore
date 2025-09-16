@@ -1,0 +1,115 @@
+# Environment variables and sensitive configuration
+.env
+.env.local
+.env.*.local
+config.local.sh
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Temporary and cache directories
+/tmp/
+cache/
+.cache/
+temp/
+.temp/
+
+# GitHub mirror working directories
+/github-mirror/
+/tmp/github-mirror/
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+*.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.test
+.env.production
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+
+# Test output
+test-results/
+coverage/
+
+# Debug files
+debug.log
+*.debug
+
+# Local development scripts
+local-*.sh
+dev-*.sh
+test-*.sh
+
+# Secrets and tokens (additional protection)
+*secret*
+*token*
+*key*
+*password*
+*credentials*
+
+# Git repositories cloned by the script
+repos/
+mirror-repos/
+
+# Statistics and reports
+stats/
+reports/
+sync_stats*.json
+
+# Email attachments and temporary files
+attachments/
+*.eml

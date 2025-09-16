@@ -18,6 +18,8 @@ CACHE_EXPIRY=${CACHE_EXPIRY:-"86400"}  # 24小时，单位秒
 # 检查仓库是否需要更新
 need_update() {
     local repo="$1"
+    # 清理仓库名称，去除可能的特殊字符
+    repo=$(printf "%s" "$repo" | tr -d '\r\n\t' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     local repo_path="$CACHE_DIR/$repo"
     
     # 如果禁用缓存，总是更新
@@ -27,7 +29,7 @@ need_update() {
     
     # 如果仓库不存在，需要更新
     if [ ! -d "$repo_path" ]; then
-        echo "缓存中未找到仓库 $repo，需要克隆"
+        printf "Cache not found for repo [%s], need to clone\n" "$repo"
         return 0  # 需要更新
     fi
     
@@ -38,14 +40,14 @@ need_update() {
         time_diff=$((current_time - last_sync))
         
         if [ $time_diff -gt $CACHE_EXPIRY ]; then
-            echo "仓库 $repo 缓存已过期（${time_diff}秒），需要更新"
+            printf "Repo [%s] cache expired (%d seconds), need to update\n" "$repo" "$time_diff"
             return 0  # 需要更新
         else
-            echo "仓库 $repo 使用缓存（剩余 $((CACHE_EXPIRY - time_diff)) 秒）"
+            printf "Using cache for repo [%s] (remaining %d seconds)\n" "$repo" "$((CACHE_EXPIRY - time_diff))"
             return 1  # 不需要更新
         fi
     else
-        echo "仓库 $repo 缓存信息缺失，需要更新"
+        printf "Cache info missing for repo [%s], need to update\n" "$repo"
         return 0  # 需要更新
     fi
 }
@@ -53,6 +55,8 @@ need_update() {
 # 克隆或更新仓库
 clone_or_update_repo() {
     local repo="$1"
+    # 清理仓库名称
+    repo=$(printf "%s" "$repo" | tr -d '\r\n\t' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     local repo_path="$CACHE_DIR/$repo"
     
     if need_update "$repo"; then
@@ -62,28 +66,28 @@ clone_or_update_repo() {
         # 如果仓库已存在，先删除
         [ -d "$repo_path" ] && rm -rf "$repo_path"
         
-        echo "克隆仓库 $repo..."
+        printf "Cloning repo [%s]...\n" "$repo"
         if git clone --mirror "https://${GITHUB_TOKEN:+$GITHUB_TOKEN@}github.com/$GITHUB_USER/$repo.git" "$repo_path"; then
             # 记录同步时间
             date +%s > "$repo_path/.last_sync"
-            echo "仓库 $repo 克隆完成"
+            printf "Repo [%s] cloned successfully\n" "$repo"
             return 0
         else
-            echo "仓库 $repo 克隆失败"
+            printf "Failed to clone repo [%s]\n" "$repo"
             return 1
         fi
     else
         # 使用缓存，但需要获取最新更改
-        echo "更新缓存仓库 $repo..."
+        printf "Updating cached repo [%s]...\n" "$repo"
         cd "$repo_path"
         if git remote update; then
             # 更新同步时间
             date +%s > "$repo_path/.last_sync"
-            echo "仓库 $repo 更新完成"
+            printf "Repo [%s] updated successfully\n" "$repo"
             cd - > /dev/null
             return 0
         else
-            echo "仓库 $repo 更新失败"
+            printf "Failed to update repo [%s]\n" "$repo"
             cd - > /dev/null
             return 1
         fi
@@ -131,27 +135,29 @@ update_stats() {
 # 同步单个仓库
 sync_repository() {
     local repo="$1"
+    # 清理仓库名称，去除可能的换行符和尾随空格
+    repo=$(printf "%s" "$repo" | tr -d '\r\n\t' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     local success=true
     local repo_path="$CACHE_DIR/$repo"
 
-    echo "开始同步仓库: $repo"
+    printf "Starting sync for repo: [%s]\n" "$repo"
     
     # 检查 Gitea 仓库是否存在
     if ! curl -s -o /dev/null -f -H "Authorization: token $GITEA_TOKEN" \
         "$GITEA_URL/api/v1/repos/$GITEA_USER/$repo"; then
-        echo "在 Gitea 上创建仓库 $repo"
+        printf "Creating repo [%s] on Gitea\n" "$repo"
         if ! curl -X POST -H "Authorization: token $GITEA_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{\"name\":\"$repo\",\"private\":false}" \
             "$GITEA_URL/api/v1/user/repos"; then
-            echo "创建仓库失败: $repo"
+            printf "Failed to create repo: [%s]\n" "$repo"
             return 1
         fi
     fi
 
     # 克隆或更新仓库
     if ! clone_or_update_repo "$repo"; then
-        echo "获取仓库失败: $repo"
+        printf "Failed to get repo: [%s]\n" "$repo"
         return 1
     fi
 
@@ -159,41 +165,41 @@ sync_repository() {
     cd "$repo_path"
 
     # 尝试 mirror 推送
-    echo "推送仓库 $repo 到 Gitea..."
+    printf "Pushing repo [%s] to Gitea...\n" "$repo"
     if ! git push --mirror "https://$GITEA_USER:$GITEA_TOKEN@${GITEA_URL#https://}/$GITEA_USER/$repo.git"; then
-        echo "mirror 推送失败，尝试逐个分支推送..."
+        printf "Mirror push failed, trying branch by branch...\n"
 
         # 获取所有分支
         git fetch --all 2>/dev/null || true
 
         # 推送每个分支
         for branch in $(git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null); do
-            echo "推送分支: $branch"
+            printf "Pushing branch: %s\n" "$branch"
             if ! git push "https://$GITEA_USER:$GITEA_TOKEN@${GITEA_URL#https://}/$GITEA_USER/$repo.git" "$branch:$branch" 2>/dev/null; then
-                echo "分支推送失败: $branch"
+                printf "Branch push failed: %s\n" "$branch"
                 success=false
             fi
         done
 
         # 推送所有标签
-        echo "推送标签..."
+        printf "Pushing tags...\n"
         if ! git push "https://$GITEA_USER:$GITEA_TOKEN@${GITEA_URL#https://}/$GITEA_USER/$repo.git" --tags 2>/dev/null; then
-            echo "标签推送失败"
+            printf "Tag push failed\n"
             success=false
         fi
     else
-        echo "仓库 $repo mirror 推送成功"
+        printf "Repo [%s] mirror push successful\n" "$repo"
     fi
     
     cd - > /dev/null
 
     if [ "$success" = true ]; then
-        echo "仓库 $repo 同步成功"
+        printf "Repo [%s] sync successful\n" "$repo"
         update_stats "success" "$(( $(jq '.success' "$STATS_FILE") + 1 ))" "number"
         update_stats "success_repos" "$repo" "array"
         return 0
     else
-        echo "仓库 $repo 同步失败"
+        printf "Repo [%s] sync failed\n" "$repo"
         update_stats "failed" "$(( $(jq '.failed' "$STATS_FILE") + 1 ))" "number"
         update_stats "failed_repos" "$repo" "array"
         return 1
@@ -219,6 +225,12 @@ main() {
 
     # 同步每个仓库
     for repo in $repos; do
+        # 清理仓库名称，去除可能的特殊字符和空格
+        repo=$(printf "%s" "$repo" | tr -d '\r\n\t' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        
+        # 跳过空行
+        [ -z "$repo" ] && continue
+        
         # 检查是否跳过 (使用精确匹配避免部分匹配问题)
         skip_repo=false
         if [ -n "$SKIP_REPOS" ]; then
@@ -235,13 +247,13 @@ main() {
         fi
         
         if [ "$skip_repo" = true ]; then
-            echo "跳过仓库: $repo"
+            printf "Skipping repo: [%s]\n" "$repo"
             update_stats "skipped" "$(( $(jq '.skipped' "$STATS_FILE") + 1 ))" "number"
             update_stats "skipped_repos" "$repo" "array"
             continue
         fi
 
-        echo "处理仓库: $repo"
+        printf "Processing repo: [%s]\n" "$repo"
         update_stats "processed" "$(( $(jq '.processed' "$STATS_FILE") + 1 ))" "number"
         sync_repository "$repo"
     done

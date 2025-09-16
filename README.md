@@ -98,26 +98,63 @@
 4. 可以自定义跳过的仓库和通知设置
 5. 点击 `Run workflow` 开始执行
 
-### 直接运行
+### 本地直接运行
 
+#### 环境要求
 ```bash
-GITHUB_USER=username \
-GITHUB_TOKEN=your-github-token \
-GITEA_URL=https://git.example.com \
-GITEA_USER=username \
+# 安装必需依赖
+# macOS
+brew install git curl jq
+
+# Ubuntu/Debian  
+sudo apt-get install -y git curl jq
+
+# CentOS/RHEL
+sudo yum install -y git curl jq
+```
+
+#### 快速开始
+```bash
+# 1. 下载代码
+git clone https://github.com/xiebaiyuan/mirrorGit.git
+cd mirrorGit
+
+# 2. 给脚本执行权限
+chmod +x main.sh mirror.sh mail.sh feishu_notify.sh
+
+# 3. 运行同步
+GITHUB_USER=your-username \
+GITHUB_TOKEN=ghp_xxxxxxxxxxxx \
+GITEA_URL=https://git.example.com:3000 \
+GITEA_USER=your-gitea-username \
 GITEA_TOKEN=your-gitea-token \
 bash main.sh
 ```
+
+#### 使用配置文件
+```bash
+# 创建配置文件
+cp .env.example .env
+
+# 编辑配置文件，填入您的实际配置
+vim .env
+
+# 运行
+source .env && bash main.sh
+```
+
+详细本地使用说明请参考 [本地使用指南](LOCAL_USAGE.md)。
 
 ### 配置环境变量后运行
 
 ```bash
 # 设置环境变量
-export GITHUB_USER=username
-export GITHUB_TOKEN=your-github-token
-export GITEA_URL=https://git.example.com
-export GITEA_USER=username
+export GITHUB_USER=your-username
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+export GITEA_URL=https://git.example.com:3000
+export GITEA_USER=your-gitea-username  
 export GITEA_TOKEN=your-gitea-token
+export SKIP_REPOS="archive,backup,test"
 
 # 运行脚本
 bash main.sh
