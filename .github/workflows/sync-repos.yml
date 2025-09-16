@@ -50,6 +50,25 @@ jobs:
         # 给脚本添加执行权限
         chmod +x main.sh mirror.sh mail.sh feishu_notify.sh
         
+    - name: Restore repository cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          /tmp/github-mirror/repos
+        key: mirror-repos-${{ secrets.GH_USER }}-${{ github.run_number }}
+        restore-keys: |
+          mirror-repos-${{ secrets.GH_USER }}-
+          mirror-repos-
+          
+    - name: Setup cache directory
+      run: |
+        # 创建缓存目录结构
+        mkdir -p /tmp/github-mirror/repos
+        
+        # 设置缓存环境变量
+        echo "ENABLE_CACHE=true" >> $GITHUB_ENV
+        echo "CACHE_DIR=/tmp/github-mirror/repos" >> $GITHUB_ENV
+        
     - name: Run sync script
       env:
         # GitHub 配置
@@ -63,6 +82,8 @@ jobs:
         
         # 基础配置
         WORK_DIR: /tmp/github-mirror
+        CACHE_DIR: /tmp/github-mirror/repos
+        ENABLE_CACHE: true
         SKIP_REPOS: ${{ github.event.inputs.skip_repos || secrets.SKIP_REPOS }}
         
         # 邮件通知配置

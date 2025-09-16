@@ -70,6 +70,50 @@ Secret 名称: SKIP_REPOS
 Secret 值: archive,backup,test-repo,private-notes
 ```
 
+### 📋 SKIP_REPOS 配置详解
+
+**格式规则**:
+- 仅使用仓库名称（不是完整路径）
+- 用逗号分隔多个仓库
+- 支持前后空格（会自动清理）
+- 精确匹配仓库名称
+
+**正确示例**:
+```bash
+# 基本格式
+archive,backup,test
+
+# 带空格（推荐，更易读）
+archive, backup, test-repo, private-notes
+
+# 单个仓库
+archive
+```
+
+**错误示例**:
+```bash
+# ❌ 不要使用完整路径
+username/archive,username/backup
+
+# ❌ 不要使用URL
+github.com/username/archive
+
+# ❌ 不要使用通配符
+test-*,*-backup
+```
+
+**实际案例**:
+假设您有以下仓库要跳过：
+- `mirrorGit-archive`
+- `backup-2024`  
+- `test-sandbox`
+- `personal-notes`
+
+配置为：
+```
+mirrorGit-archive, backup-2024, test-sandbox, personal-notes
+```
+
 ## ⚠️ 重要注意事项
 
 1. **Secret 名称限制**: GitHub 不允许 Secret 名称以 `GITHUB_` 开头

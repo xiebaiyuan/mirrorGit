@@ -13,6 +13,11 @@ GITEA_TOKEN=${GITEA_TOKEN:-"default-gitea-token"}
 WORK_DIR=${WORK_DIR:-"/tmp/github-mirror"}
 LOG_DIR=${LOG_DIR:-"$WORK_DIR/logs"}
 
+# 缓存配置
+ENABLE_CACHE=${ENABLE_CACHE:-"true"}
+CACHE_DIR=${CACHE_DIR:-"$WORK_DIR/repos"}
+CACHE_EXPIRY=${CACHE_EXPIRY:-"86400"}  # 缓存过期时间（秒），默认24小时
+
 # 邮件配置
 ENABLE_MAIL=${ENABLE_MAIL:-"false"}
 SMTP_SERVER=${SMTP_SERVER:-""}

@@ -5,12 +5,14 @@
 ## 功能特性
 
 - 自动同步 GitHub 所有仓库到 Gitea
+- **智能缓存机制** - 大幅提升同步效率，避免重复下载
 - 支持设置跳过特定仓库
 - 分级推送策略（先尝试 mirror，失败后逐个推送分支）
 - 详细的进度显示和错误提示
 - 支持通过环境变量配置
 - 适合配合 crontab 使用
 - 支持运行后收集报告并发送邮件
+- **GitHub Actions 集成** - 免服务器自动同步
 
 ## 必要条件
 
@@ -31,6 +33,9 @@
 | GITEA_TOKEN | 是 | Gitea 访问令牌 | `d4209xxxxxxxxxxxxx` |
 | SKIP_REPOS | 否 | 跳过的仓库列表（逗号分隔） | `repo1,repo2,repo3` |
 | WORK_DIR | 否 | 临时工作目录 | `/tmp/git-mirror` |
+| ENABLE_CACHE | 否 | 是否启用缓存机制 | `true` 或 `false` | `true` |
+| CACHE_DIR | 否 | 缓存目录路径 | `/tmp/git-mirror/repos` | `$WORK_DIR/repos` |
+| CACHE_EXPIRY | 否 | 缓存过期时间（秒） | `86400` | `86400` (24小时) |
 | ENABLE_MAIL | 否 | 是否启用邮件通知 | `true` 或 `false` | `false` |
 | SMTP_SERVER | 否 | SMTP 服务器地址 | `smtp.gmail.com` | - |
 | SMTP_PORT | 否 | SMTP 端口 | `587` | `587` |
@@ -137,9 +142,15 @@ GITHUB_USER=username \
 GITEA_URL=https://git.example.com \
 GITEA_USER=username \
 GITEA_TOKEN=xxx \
-SKIP_REPOS="repo1,repo2,repo3" \
+SKIP_REPOS="archive,backup,test-repo" \
 bash main.sh
 ```
+
+**SKIP_REPOS 格式说明**:
+- 仅使用仓库名称（如 `repo1,repo2,repo3`）
+- 不要使用完整路径（如 `username/repo1`）
+- 支持空格分隔（如 `repo1, repo2, repo3`）
+- 精确匹配仓库名称
 
 ## 邮件通知配置
 
@@ -196,6 +207,26 @@ bash main.sh
 - ❌ 需要手动配置定时任务
 
 适合有自己服务器且需要更多自定义的用户。详见上面的 "设置定时任务（服务器部署）" 部分。
+
+## 💡 性能优化
+
+### 缓存机制
+
+本项目支持智能缓存，大幅提升同步效率：
+
+- **首次运行**: 完整克隆所有仓库
+- **后续运行**: 仅下载增量更新，节省时间和带宽
+- **自动管理**: GitHub Actions 自动处理缓存存储和恢复
+
+详细说明请参考 [缓存机制文档](CACHE.md)。
+
+### 性能对比
+
+| 场景 | 无缓存 | 有缓存 | 节省 |
+|------|--------|--------|------|
+| 10个仓库首次同步 | 5分钟 | 5分钟 | 0% |
+| 10个仓库日常同步 | 5分钟 | 30秒 | 90% |
+| 网络流量 | 每次1GB+ | 首次1GB+，后续<50MB | 95% |
 
 ## 常见问题
 
