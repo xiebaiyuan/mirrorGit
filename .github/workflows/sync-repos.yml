@@ -53,8 +53,8 @@ jobs:
     - name: Run sync script
       env:
         # GitHub 配置
-        GITHUB_USER: ${{ secrets.GITHUB_USER }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_USER: ${{ secrets.GH_USER }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         
         # Gitea 配置
         GITEA_URL: ${{ secrets.GITEA_URL }}

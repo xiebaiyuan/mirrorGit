@@ -58,11 +58,13 @@
 在您的 GitHub 仓库中，依次点击 `Settings` -> `Secrets and variables` -> `Actions`，添加以下 secrets：
 
 **必需的 Secrets：**
-- `GITHUB_USER`: GitHub 用户名
-- `GITHUB_TOKEN`: GitHub 访问令牌
+- `GH_USER`: GitHub 用户名
+- `GH_TOKEN`: GitHub 访问令牌
 - `GITEA_URL`: Gitea 实例地址（如 `https://git.example.com`）
 - `GITEA_USER`: Gitea 用户名
 - `GITEA_TOKEN`: Gitea 访问令牌
+
+⚠️ **注意**: GitHub不允许Secret名称以 `GITHUB_` 开头，所以使用 `GH_USER` 和 `GH_TOKEN`。
 
 **可选的 Secrets：**
 - `SKIP_REPOS`: 跳过的仓库列表（逗号分隔）

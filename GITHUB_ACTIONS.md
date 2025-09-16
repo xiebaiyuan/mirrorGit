@@ -18,11 +18,13 @@
 
 | Secret名称 | 说明 | 示例 |
 |-----------|------|------|
-| `GITHUB_USER` | 您的GitHub用户名 | `your-username` |
-| `GITHUB_TOKEN` | GitHub个人访问令牌 | `ghp_xxxxxxxxxxxx` |
+| `GH_USER` | 您的GitHub用户名 | `your-username` |
+| `GH_TOKEN` | GitHub个人访问令牌 | `ghp_xxxxxxxxxxxx` |
 | `GITEA_URL` | Gitea实例的完整URL（支持自定义端口） | `https://git.example.com:3000` 或 `https://git.example.com` |
 | `GITEA_USER` | Gitea用户名 | `your-gitea-username` |
 | `GITEA_TOKEN` | Gitea访问令牌 | `abcdef123456789` |
+
+⚠️ **重要提示**: GitHub不允许Secret名称以 `GITHUB_` 开头，所以我们使用 `GH_USER` 和 `GH_TOKEN` 代替。
 
 ### GITEA_URL 格式说明
 
@@ -76,6 +78,7 @@
    - `repo` (完整的仓库访问权限)
    - `read:user` (读取用户基本信息)
 4. 生成后复制Token（只显示一次）
+5. 在GitHub仓库Secrets中配置为 `GH_TOKEN`（不是 `GITHUB_TOKEN`）
 
 ### Gitea Token
 
