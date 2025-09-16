@@ -49,6 +49,48 @@
 
 ## 使用方法
 
+### GitHub Actions 自动同步（推荐）
+
+本项目提供了 GitHub Actions 工作流，可以自动定时执行同步任务。
+
+#### 1. 配置 GitHub Secrets
+
+在您的 GitHub 仓库中，依次点击 `Settings` -> `Secrets and variables` -> `Actions`，添加以下 secrets：
+
+**必需的 Secrets：**
+- `GITHUB_USER`: GitHub 用户名
+- `GITHUB_TOKEN`: GitHub 访问令牌
+- `GITEA_URL`: Gitea 实例地址（如 `https://git.example.com`）
+- `GITEA_USER`: Gitea 用户名
+- `GITEA_TOKEN`: Gitea 访问令牌
+
+**可选的 Secrets：**
+- `SKIP_REPOS`: 跳过的仓库列表（逗号分隔）
+- `ENABLE_MAIL`: 是否启用邮件通知（`true` 或 `false`）
+- `SMTP_SERVER`: SMTP 服务器地址
+- `SMTP_PORT`: SMTP 端口（默认 587）
+- `SMTP_USER`: SMTP 用户名
+- `SMTP_PASS`: SMTP 密码
+- `MAIL_TO`: 接收通知的邮箱
+- `MAIL_FROM`: 发件人地址
+- `ENABLE_FEISHU`: 是否启用飞书通知（`true` 或 `false`）
+- `FEISHU_WEBHOOK_URL`: 飞书机器人 Webhook URL
+
+#### 2. 工作流说明
+
+- **自动触发**: 每天北京时间凌晨 2 点自动执行
+- **手动触发**: 在 Actions 页面可以手动触发，支持自定义参数
+- **日志保存**: 同步日志会作为 artifacts 保存 30 天
+- **执行摘要**: 在 Actions 页面可以查看同步统计信息
+
+#### 3. 手动触发工作流
+
+1. 进入仓库的 `Actions` 页面
+2. 选择 `Sync GitHub to Gitea` 工作流
+3. 点击 `Run workflow` 按钮
+4. 可以自定义跳过的仓库和通知设置
+5. 点击 `Run workflow` 开始执行
+
 ### 直接运行
 
 ```bash
@@ -74,9 +116,9 @@ export GITEA_TOKEN=your-gitea-token
 bash main.sh
 ```
 
-### 设置定时任务
+### 设置定时任务（服务器部署）
 
-编辑 crontab：
+如果您想在自己的服务器上设置定时任务，可以编辑 crontab：
 ```bash
 crontab -e
 ```
@@ -132,6 +174,27 @@ bash main.sh
 0 2 * * * GITHUB_USER=username GITHUB_TOKEN=xxx GITEA_URL=https://git.example.com GITEA_USER=username GITEA_TOKEN=xxx SMTP_SERVER=smtp.gmail.com SMTP_PORT=587 SMTP_USER=your-email@gmail.com SMTP_PASS=your-password MAIL_TO=your-email@example.com /path/to/main.sh
 ```
 
+## 部署方式
+
+### 方式一：GitHub Actions（推荐）
+
+- ✅ 无需服务器，完全托管
+- ✅ 定时自动执行
+- ✅ 可视化日志和统计
+- ✅ 支持手动触发
+- ✅ 日志文件自动保存
+
+配置简单，只需要在 GitHub 仓库中设置 Secrets 即可。详见上面的 "GitHub Actions 自动同步" 部分。
+
+### 方式二：服务器部署
+
+- ✅ 完全控制执行环境
+- ✅ 可以自定义更复杂的逻辑
+- ❌ 需要维护服务器
+- ❌ 需要手动配置定时任务
+
+适合有自己服务器且需要更多自定义的用户。详见上面的 "设置定时任务（服务器部署）" 部分。
+
 ## 常见问题
 
 1. **获取 GitHub Token**
@@ -141,6 +204,12 @@ bash main.sh
 2. **获取 Gitea Token**
    - 访问 Gitea 设置 -> 应用 -> 创建新的令牌
    - 需要仓库的读写权限
+
+3. **GitHub Actions 相关**
+   - 确保所有必需的 Secrets 都已正确配置
+   - 检查 Actions 页面的执行日志
+   - 下载 artifacts 查看详细的同步日志
+   - 如果同步失败，可以手动触发工作流进行调试
 
 4. **错误处理**
    - 检查令牌权限是否正确
@@ -153,6 +222,16 @@ bash main.sh
 ```bash
 bash -x main.sh
 ```
+
+### GitHub Actions 调试
+
+如果 GitHub Actions 执行失败：
+
+1. 检查 Actions 页面的执行日志
+2. 下载 artifacts 中的详细日志文件
+3. 验证所有 Secrets 配置是否正确
+4. 使用手动触发功能进行测试
+5. 检查 GitHub Token 和 Gitea Token 的权限
 
 ## 注意事项
 

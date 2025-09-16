@@ -1,0 +1,129 @@
+name: Sync GitHub to Gitea
+
+on:
+  # 定时任务：每天北京时间凌晨2点执行（UTC时间18点）
+  schedule:
+    - cron: '0 18 * * *'
+  
+  # 也支持手动触发
+  workflow_dispatch:
+    inputs:
+      skip_repos:
+        description: '跳过的仓库列表（逗号分隔）'
+        required: false
+        default: ''
+      enable_mail:
+        description: '是否启用邮件通知'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      enable_feishu:
+        description: '是否启用飞书通知'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git curl jq
+        
+    - name: Setup environment
+      run: |
+        # 创建工作目录
+        mkdir -p /tmp/github-mirror/logs
+        
+        # 给脚本添加执行权限
+        chmod +x main.sh mirror.sh mail.sh feishu_notify.sh
+        
+    - name: Run sync script
+      env:
+        # GitHub 配置
+        GITHUB_USER: ${{ secrets.GITHUB_USER }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+        # Gitea 配置
+        GITEA_URL: ${{ secrets.GITEA_URL }}
+        GITEA_USER: ${{ secrets.GITEA_USER }}
+        GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
+        
+        # 基础配置
+        WORK_DIR: /tmp/github-mirror
+        SKIP_REPOS: ${{ github.event.inputs.skip_repos || secrets.SKIP_REPOS }}
+        
+        # 邮件通知配置
+        ENABLE_MAIL: ${{ github.event.inputs.enable_mail || secrets.ENABLE_MAIL || 'false' }}
+        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+        SMTP_USER: ${{ secrets.SMTP_USER }}
+        SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        MAIL_TO: ${{ secrets.MAIL_TO }}
+        MAIL_FROM: ${{ secrets.MAIL_FROM }}
+        
+        # 飞书通知配置
+        ENABLE_FEISHU: ${{ github.event.inputs.enable_feishu || secrets.ENABLE_FEISHU || 'false' }}
+        FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        
+      run: |
+        echo "开始执行GitHub到Gitea的同步任务..."
+        echo "GitHub用户: $GITHUB_USER"
+        echo "Gitea URL: $GITEA_URL"
+        echo "Gitea用户: $GITEA_USER"
+        echo "工作目录: $WORK_DIR"
+        echo "跳过仓库: $SKIP_REPOS"
+        echo "邮件通知: $ENABLE_MAIL"
+        echo "飞书通知: $ENABLE_FEISHU"
+        echo "----------------------------------------"
+        
+        # 运行主脚本
+        bash main.sh
+        
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: sync-logs-${{ github.run_number }}
+        path: /tmp/github-mirror/logs/
+        retention-days: 30
+        
+    - name: Summary
+      if: always()
+      run: |
+        echo "## 同步任务完成" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 基本信息" >> $GITHUB_STEP_SUMMARY
+        echo "- 运行时间: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- 工作流: ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+        echo "- 运行编号: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # 查找最新的统计文件
+        LATEST_STATS=$(find /tmp/github-mirror/logs -name "sync_stats-*.json" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2- || echo "")
+        
+        if [ -n "$LATEST_STATS" ] && [ -f "$LATEST_STATS" ]; then
+          echo "### 同步统计" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          cat "$LATEST_STATS" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### 同步统计" >> $GITHUB_STEP_SUMMARY
+          echo "未找到统计文件" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 日志文件" >> $GITHUB_STEP_SUMMARY
+        echo "日志文件已上传为artifacts，可在Actions页面下载查看。" >> $GITHUB_STEP_SUMMARY
