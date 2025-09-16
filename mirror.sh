@@ -9,6 +9,7 @@ GITEA_TOKEN="$5"
 WORK_DIR="$6"
 SKIP_REPOS="$7"
 STATS_FILE="$8"
+SYNC_MODE="${9:-full}"  # 同步模式：full(默认)或single
 
 # 缓存配置
 ENABLE_CACHE=${ENABLE_CACHE:-"false"}
@@ -213,6 +214,22 @@ main() {
 
     # 初始化统计
     init_stats
+    
+    # 根据同步模式处理
+    if [ "$SYNC_MODE" = "single" ]; then
+        # 单个仓库模式
+        local repo="$SKIP_REPOS"  # 在单个模式下，SKIP_REPOS参数实际上是要处理的仓库名
+        printf "Processing single repo: [%s]\n" "$repo"
+        update_stats "total_repos" "1" "number"
+        update_stats "processed" "1" "number"
+        sync_repository "$repo"
+        
+        # 更新结束时间
+        jq --arg time "$(date '+%Y-%m-%d %H:%M:%S')" \
+            '.end_time = $time' "$STATS_FILE" > "$STATS_FILE.tmp"
+        mv "$STATS_FILE.tmp" "$STATS_FILE"
+        return
+    fi
 
     # 获取仓库列表（支持分页获取所有仓库）
     echo "Fetching repository list from GitHub..."
@@ -259,7 +276,7 @@ $page_repos"
         exit 1
     fi
 
-    # 更新总仓库数
+    # 更新总仓库数（如果不是单一仓库模式）
     total_repos=$(echo "$repos" | wc -l)
     update_stats "total_repos" "$total_repos" "number"
 
