@@ -16,6 +16,58 @@ ENABLE_CACHE=${ENABLE_CACHE:-"false"}
 CACHE_DIR=${CACHE_DIR:-"$WORK_DIR/repos"}
 CACHE_EXPIRY=${CACHE_EXPIRY:-"86400"}  # 24小时，单位秒
 
+# 检查GitHub和Gitea仓库的最新提交是否一致
+check_commits_match() {
+    local repo="$1"
+    local github_clone_url="https://${GITHUB_TOKEN:+$GITHUB_TOKEN@}github.com/$GITHUB_USER/$repo.git"
+    local gitea_clone_url="https://$GITEA_USER:$GITEA_TOKEN@${GITEA_URL#https://}/$GITEA_USER/$repo.git"
+    local temp_dir="$WORK_DIR/temp_check/$repo"
+    
+    # 创建临时目录
+    mkdir -p "$temp_dir"
+    cd "$temp_dir"
+    
+    # 检查Gitea仓库是否存在
+    if ! curl -s -o /dev/null -f -H "Authorization: token $GITEA_TOKEN" \
+        "$GITEA_URL/api/v1/repos/$GITEA_USER/$repo"; then
+        printf "Gitea repo [%s] does not exist, will create\n" "$repo"
+        return 1  # 不匹配，需要同步
+    fi
+    
+    # 获取GitHub最新提交
+    printf "Checking latest commit for GitHub repo [%s]...\n" "$repo"
+    local github_latest_commit=""
+    github_latest_commit=$(git ls-remote "$github_clone_url" HEAD 2>/dev/null | awk '{print $1}')
+    if [ -z "$github_latest_commit" ]; then
+        printf "Failed to get GitHub latest commit for [%s]\n" "$repo"
+        return 1  # 获取失败，视为不匹配
+    fi
+    
+    # 获取Gitea最新提交
+    printf "Checking latest commit for Gitea repo [%s]...\n" "$repo"
+    local gitea_latest_commit=""
+    gitea_latest_commit=$(git ls-remote "$gitea_clone_url" HEAD 2>/dev/null | awk '{print $1}')
+    if [ -z "$gitea_latest_commit" ]; then
+        printf "Failed to get Gitea latest commit for [%s]\n" "$repo"
+        return 1  # 获取失败，视为不匹配
+    fi
+    
+    # 清理临时目录
+    cd - > /dev/null
+    rm -rf "$temp_dir"
+    
+    # 比较提交
+    if [ "$github_latest_commit" = "$gitea_latest_commit" ]; then
+        printf "Repo [%s] commits match: %s\n" "$repo" "$github_latest_commit"
+        return 0  # 匹配，可以跳过
+    else
+        printf "Repo [%s] commits differ:\n" "$repo"
+        printf "  GitHub: %s\n" "$github_latest_commit"
+        printf "  Gitea: %s\n" "$gitea_latest_commit"
+        return 1  # 不匹配，需要同步
+    fi
+}
+
 # 检查仓库是否需要更新
 need_update() {
     local repo="$1"
@@ -104,12 +156,14 @@ init_stats() {
     "skipped": 0,
     "success": 0,
     "failed": 0,
+    "already_up_to_date": false,
     "start_time": "$(date '+%Y-%m-%d %H:%M:%S')",
     "end_time": "",
     "details": {
         "skipped_repos": [],
         "success_repos": [],
-        "failed_repos": []
+        "failed_repos": [],
+        "unchanged_repos": []
     }
 }
 EOF
@@ -142,6 +196,14 @@ sync_repository() {
     local repo_path="$CACHE_DIR/$repo"
 
     printf "Starting sync for repo: [%s]\n" "$repo"
+    
+    # 首先检查提交是否一致，如果一致则跳过同步
+    if check_commits_match "$repo"; then
+        printf "Repo [%s] is already up to date, skipping\n" "$repo"
+        update_stats "skipped" "$(( $(jq '.skipped' "$STATS_FILE") + 1 ))" "number"
+        update_stats "skipped_repos" "$repo" "array"
+        return 0
+    fi
     
     # 检查 Gitea 仓库是否存在
     if ! curl -s -o /dev/null -f -H "Authorization: token $GITEA_TOKEN" \
@@ -222,6 +284,23 @@ main() {
         printf "Processing single repo: [%s]\n" "$repo"
         update_stats "total_repos" "1" "number"
         update_stats "processed" "1" "number"
+        
+        # 首先检查提交是否一致，如果一致则跳过同步
+        if check_commits_match "$repo"; then
+            printf "Repo [%s] is already up to date, skipping\n" "$repo"
+            # 在统计文件中添加一个标记，表明仓库是因为没有变更而跳过的
+            jq '.already_up_to_date = true' "$STATS_FILE" > "$STATS_FILE.tmp"
+            mv "$STATS_FILE.tmp" "$STATS_FILE"
+            update_stats "skipped" "1" "number"
+            update_stats "skipped_repos" "$repo" "array"
+            
+            # 更新结束时间
+            jq --arg time "$(date '+%Y-%m-%d %H:%M:%S')" \
+                '.end_time = $time' "$STATS_FILE" > "$STATS_FILE.tmp"
+            mv "$STATS_FILE.tmp" "$STATS_FILE"
+            return 0
+        fi
+        
         sync_repository "$repo"
         
         # 更新结束时间

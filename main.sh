@@ -254,14 +254,28 @@ main() {
             "single"  # 添加一个参数表示单个仓库模式
         
         mirror_exit_code=$?
-        total_processed=$((total_processed+1))
         
         # 检查同步结果
         if [ $mirror_exit_code -eq 0 ]; then
-            success_repos+=("$repo")
-            log "${GREEN}仓库 $repo 同步成功${NC}"
-            # 更新断点状态为成功
-            create_checkpoint "$repo" "success"
+            # 检查是否是因为没有变更而跳过
+            if grep -q "is already up to date, skipping" "$repo_stats_dir/$repo.json" 2>/dev/null; then
+                log "${BLUE}仓库 $repo 已经是最新的，无需同步${NC}"
+                skipped_repos+=("$repo")
+                # 更新断点状态为跳过
+                create_checkpoint "$repo" "skipped"
+            else
+                success_repos+=("$repo")
+                log "${GREEN}仓库 $repo 同步成功${NC}"
+                # 更新断点状态为成功
+                create_checkpoint "$repo" "success"
+                
+                # 显示仓库大小
+                local repo_dir="$WORK_DIR/repos/$repo"
+                if [ -d "$repo_dir" ]; then
+                    local size=$(du -sh "$repo_dir" | cut -f1)
+                    log "- ${GREEN}$repo${NC}: ${YELLOW}$size${NC}"
+                fi
+            fi
         else
             failed_repos+=("$repo")
             log "${RED}仓库 $repo 同步失败${NC}"
@@ -269,13 +283,7 @@ main() {
             create_checkpoint "$repo" "failed"
         fi
         
-        # 显示仓库大小
-        local repo_dir="$WORK_DIR/repos/$repo"
-        if [ -d "$repo_dir" ]; then
-            local size=$(du -sh "$repo_dir" | cut -f1)
-            log "- ${GREEN}$repo${NC}: ${YELLOW}$size${NC}"
-        fi
-        
+        total_processed=$((total_processed+1))
         log "已完成: ${#success_repos[@]} 成功, ${#failed_repos[@]} 失败, ${#skipped_repos[@]} 跳过, 总进度: $total_processed/${#all_repos[@]}"
         log "------------------------"
     done
